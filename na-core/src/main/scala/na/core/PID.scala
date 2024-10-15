@@ -9,9 +9,6 @@ case class PID(msb: Long, lsb: Long):
 
   import PID.*
 
-//  assert(variant == Variant.LeachSalz, "No archive compliant uuid variant: LeachSalz)")
-//  assert(version == Version.CustomFormatBased, "no archive compliant uuid version: CustomFormatBased")
-//
   /**
    * The variant field determines the overall layout of the UUID.  That is, the interpretation of all other bits in the
    * UUID depends on the setting of the bits in the variant field.  As such, it could more accurately be called a type
@@ -78,7 +75,7 @@ case class PID(msb: Long, lsb: Long):
   private def extractor(bits: Long)(v: Embedded): Boolean =
     v.value == (bits & v.mask)
 
-  def embed(value: Embedded, significant: Boolean = true): PID =
+  def embed(value: Embedded, significant: Boolean): PID =
     if significant then
       copy(msb = (msb & ~value.mask) | (value.value & value.mask))
     else
@@ -97,46 +94,48 @@ object PID:
     UUID
       .randomUUID
       .toPID
-      .embed(Version.CustomFormatBased)
-      .embed(born)
-      .embed(copy)
+      .embed(Version.CustomFormatBased, significant = true)
+      .embed(born, significant = false)
+      .embed(copy, significant = false)
 
   abstract class Embedded(val mask: Long):
     val value: Long
 
-  enum Variant(override val value: Long) extends Embedded(0xE000_000000000000L):
-    case NCSBackwardsCompatible       extends Variant(0x0000_000000000000L)
-    case LeachSalz                    extends Variant(0x8000_000000000000L)
-    case MicrosoftBackwardsCompatible extends Variant(0xC000_000000000000L)
-    case Reserved                     extends Variant(0xE000_000000000000L)
+  enum Variant(override val value: Long) extends Embedded(mask = 0xE000_000000000000L):
+    case NCSBackwardsCompatible       extends Variant(value = 0x0000_000000000000L)
+    case LeachSalz                    extends Variant(value = 0x8000_000000000000L)
+    case MicrosoftBackwardsCompatible extends Variant(value = 0xC000_000000000000L)
+    case Reserved                     extends Variant(value = 0xE000_000000000000L)
 
-  enum Version(override val value: Long) extends Embedded(0x00000000_0000_F000L):
-    case Unused                      extends Version(0x00000000_0000_0000L)
-    case GregorianTimeBased          extends Version(0x00000000_0000_1000L)
-    case DCESecurityBased            extends Version(0x00000000_0000_2000L)
-    case MD5HashNameBased            extends Version(0x00000000_0000_3000L)
-    case RandomGeneratedBased        extends Version(0x00000000_0000_4000L)
-    case SHA1HashNameBased           extends Version(0x00000000_0000_5000L)
-    case ReorderedGregorianTimeBased extends Version(0x00000000_0000_6000L)
-    case UnixEpochTimeBased          extends Version(0x00000000_0000_7000L)
-    case CustomFormatBased           extends Version(0x00000000_0000_8000L)
-    case Version9                    extends Version(0x00000000_0000_9000L)
-    case Version10                   extends Version(0x00000000_0000_A000L)
-    case Version11                   extends Version(0x00000000_0000_B000L)
-    case Version12                   extends Version(0x00000000_0000_C000L)
-    case Version13                   extends Version(0x00000000_0000_D000L)
-    case Version14                   extends Version(0x00000000_0000_E000L)
-    case Version15                   extends Version(0x00000000_0000_F000L)
+  enum Version(override val value: Long) extends Embedded(mask = 0x00000000_0000_F000L):
+    case Unused                      extends Version(value = 0x00000000_0000_0000L)
+    case GregorianTimeBased          extends Version(value = 0x00000000_0000_1000L)
+    case DCESecurityBased            extends Version(value = 0x00000000_0000_2000L)
+    case MD5HashNameBased            extends Version(value = 0x00000000_0000_3000L)
+    case RandomGeneratedBased        extends Version(value = 0x00000000_0000_4000L)
+    case SHA1HashNameBased           extends Version(value = 0x00000000_0000_5000L)
+    case ReorderedGregorianTimeBased extends Version(value = 0x00000000_0000_6000L)
+    case UnixEpochTimeBased          extends Version(value = 0x00000000_0000_7000L)
+    case CustomFormatBased           extends Version(value = 0x00000000_0000_8000L)
+    case Version9                    extends Version(value = 0x00000000_0000_9000L)
+    case Version10                   extends Version(value = 0x00000000_0000_A000L)
+    case Version11                   extends Version(value = 0x00000000_0000_B000L)
+    case Version12                   extends Version(value = 0x00000000_0000_C000L)
+    case Version13                   extends Version(value = 0x00000000_0000_D000L)
+    case Version14                   extends Version(value = 0x00000000_0000_E000L)
+    case Version15                   extends Version(value = 0x00000000_0000_F000L)
 
-  enum Born(override val value: Long) extends Embedded(0x0000_000000000001L):
+  /** An ordinal persisted enumeration of whether the PID's information is either born digitally or physically */
+  enum Born(override val value: Long) extends Embedded(mask = 0x0000_000000000001L):
     case Digitally  extends Born(value = 0x0000_000000000000L)
     case Physically extends Born(value = 0x0000_000000000001L)
 
-  enum Copy(override val value: Long) extends Embedded(0x0000_000000000006L):
-    case External   extends Copy(0x0000_000000000000L)
-    case Internal1  extends Copy(0x0000_000000000002L)
-    case Internal2  extends Copy(0x0000_000000000004L)
-    case Internal3  extends Copy(0x0000_000000000006L)
+  /** An ordinal persisted enumeration of whether the PID's information is known externally or copied internally. */
+  enum Copy(override val value: Long) extends Embedded(mask = 0x0000_000000000006L):
+    case External   extends Copy(value = 0x0000_000000000000L)
+    case Internal1  extends Copy(value = 0x0000_000000000002L)
+    case Internal2  extends Copy(value = 0x0000_000000000004L)
+    case Internal3  extends Copy(value = 0x0000_000000000006L)
 
 
   given pidEncoder: Encoder[PID] =
@@ -162,3 +161,6 @@ object PID:
 
   extension (uuid: UUID) def toPID: PID =
     PID(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+    
+  extension (pid: PID) def asExternal: PID =
+    pid.embed(Copy.External, significant = false)
