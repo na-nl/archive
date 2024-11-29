@@ -1,4 +1,4 @@
-package org
+package na
 
 import org.scalatest.*
 import org.scalatest.concurrent.*
@@ -18,7 +18,7 @@ import na.*
 import core.*
 import organisation.*
 
-class ServerSpec
+class OrganisationServiceSpec
   extends AsyncFlatSpec
   with Checkpoints
   with Matchers
